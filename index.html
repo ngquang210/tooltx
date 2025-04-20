@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tool Phân Tích Lịch Sử Tài Xỉu - vkhanhh v2</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f0f2f5;
+            color: #1c1e21;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align items to the top */
+            min-height: 90vh;
+            padding-top: 30px; /* Add padding at the top */
+        }
+        .container {
+            width: 100%;
+            max-width: 550px;
+            background: #fff;
+            padding: 25px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 1px solid #dddfe2;
+        }
+        h1 {
+            text-align: center;
+            color: #1877f2; /* Facebook blue */
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+         .section {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background-color: #f9f9f9;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #606770;
+        }
+        input[type="text"] {
+            width: calc(100% - 24px); /* Account for padding */
+            padding: 10px 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccd0d5;
+            border-radius: 6px;
+            font-size: 15px;
+            background-color: #f5f6f7;
+            text-transform: uppercase; /* Automatically convert to uppercase */
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #1877f2;
+            box-shadow: 0 0 0 2px #e7f3ff;
+        }
+        button {
+            display: block;
+            width: 100%;
+            background-color: #28a745; /* Green color */
+            color: white;
+            padding: 11px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+            margin-top: 5px; /* Add some space above the button */
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            display: none; /* Hide initially */
+            white-space: pre-wrap; /* Preserve line breaks */
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+        .result-title {
+            font-weight: bold;
+            color: #050505;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+            display: block;
+        }
+         .probability-tai {
+            color: #dc3545; /* Red for Tài */
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .probability-xiu {
+            color: #007bff; /* Blue for Xỉu */
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+            padding: 10px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+         .disclaimer {
+            margin-top: 15px;
+            font-style: italic;
+            color: #6c757d;
+            font-size: 0.9em;
+            text-align: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px dashed #ccc;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Tool Phân Tích Lịch Sử Tài Xỉu - vkhanhh v2</h1>
+
+    <!-- Phần Phân Tích Lịch Sử Cầu -->
+    <div class="section">
+        <h2>Phân Tích 10 Ván Gần Nhất</h2>
+        <label for="history10Input">Nhập 10 kết quả gần nhất (Chỉ dùng T hoặc X):</label>
+        <input type="text" id="history10Input" placeholder="Ví dụ: TXTXXTTXXT" maxlength="10">
+
+        <button id="analyzeHistoryButton">Phân Tích Lịch Sử</button>
+        <div id="historicalResult" class="result"></div>
+         <p class="disclaimer">
+            <strong>Quan trọng:</strong> Tool này tính toán xác suất dựa trên tần suất xuất hiện của Tài (T) và Xỉu (X) trong 10 ván bạn đã nhập. Đây chỉ là thống kê lịch sử, **không đảm bảo** kết quả chính xác cho ván tiếp theo. Kết quả các ván thường mang tính ngẫu nhiên.
+        </p>
+    </div>
+
+</div>
+
+<script>
+    // --- Elements ---
+    const history10Input = document.getElementById('history10Input');
+    const analyzeHistoryButton = document.getElementById('analyzeHistoryButton');
+    const historicalResult = document.getElementById('historicalResult');
+
+    // --- Event Listener ---
+    analyzeHistoryButton.addEventListener('click', () => {
+        const historyInputRaw = history10Input.value.trim().toUpperCase();
+        historicalResult.innerHTML = ''; // Clear previous result/error
+        historicalResult.style.display = 'block'; // Show result area
+
+        // 1. Validate and Filter Input (Allow only T and X)
+        let validHistory = '';
+        for (let char of historyInputRaw) {
+            if (char === 'T' || char === 'X') {
+                validHistory += char;
+            }
+        }
+
+        // Check if any valid characters were entered
+        if (validHistory.length === 0) {
+            historicalResult.innerHTML = '<p class="error">Lỗi: Vui lòng nhập lịch sử hợp lệ chỉ chứa T (Tài) hoặc X (Xỉu).</p>';
+            return;
+        }
+
+        // Optional: Enforce exactly 10 games if desired
+        /*
+        if (validHistory.length !== 10) {
+             historicalResult.innerHTML = `<p class="error">Lỗi: Vui lòng nhập đúng 10 kết quả (hiện tại có ${validHistory.length} kết quả hợp lệ).</p>`;
+             return;
+        }
+        */
+
+        // 2. Count T and X
+        let taiCount = 0;
+        let xiuCount = 0;
+        for (let char of validHistory) {
+            if (char === 'T') {
+                taiCount++;
+            } else if (char === 'X') {
+                xiuCount++;
+            }
+        }
+
+        // 3. Calculate Percentages
+        const totalGames = validHistory.length; // Use the length of the *valid* history
+        const taiPercentage = totalGames > 0 ? ((taiCount / totalGames) * 100) : 0;
+        const xiuPercentage = totalGames > 0 ? ((xiuCount / totalGames) * 100) : 0;
+
+        // 4. Format and Display Results
+        let outputHTML = `
+            <span class="result-title">Kết Quả Phân Tích ${totalGames} Ván Gần Nhất:</span>
+            <p>Chuỗi đã nhập (hợp lệ): <strong>${validHistory}</strong></p>
+            <p>Số lần Tài (T): <strong style="color: #dc3545;">${taiCount}</strong></p>
+            <p>Số lần Xỉu (X): <strong style="color: #007bff;">${xiuCount}</strong></p>
+            <hr style="border: none; border-top: 1px dashed #ccc; margin: 15px 0;">
+            <p><strong>Xác suất thống kê cho ván tiếp theo:</strong></p>
+            <p><span class="probability-tai">TÀI: ${taiPercentage.toFixed(2)}%</span></p>
+            <p><span class="probability-xiu">XỈU: ${xiuPercentage.toFixed(2)}%</span></p>
+        `;
+
+        historicalResult.innerHTML = outputHTML;
+    });
+
+    // Optional: Allow pressing Enter in the input field to trigger analysis
+    history10Input.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent default form submission if it were in a form
+            analyzeHistoryButton.click(); // Trigger the button click
+        }
+    });
+
+     // Optional: Auto-uppercase input and restrict to T, X, backspace, delete, arrow keys
+     history10Input.addEventListener('input', function(event) {
+        const input = event.target;
+        const originalValue = input.value;
+        const caretPosition = input.selectionStart; // Remember cursor position
+
+        // Convert to uppercase and filter allowed chars
+        let newValue = originalValue.toUpperCase().replace(/[^TX]/g, '');
+
+        input.value = newValue;
+
+        // Restore cursor position if possible (tricky with filtering)
+        // This simple approach might reset position on invalid key press
+        // input.setSelectionRange(caretPosition, caretPosition);
+    });
+
+
+</script>
+
+</body>
+</html>
